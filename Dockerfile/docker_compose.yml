@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  trading-bot:
+    image: trading-bot:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python -u src/main.py
+
+  health-check:
+    image: alpine
+    depends_on:
+      - trading-bot
+    command: |
+      sh -c 'while true; do
+        if wget -q --spider http://trading-bot:3000/health; then
+          echo "OK" > /health
+        else
+          rm -f /health
+        fi
+        sleep 30
+      done'
+    volumes:
+      - ./health:/health
